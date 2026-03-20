@@ -4,9 +4,11 @@ facepaint is an AR drawing app where users can sign up, create hand-drawn face f
 
 ![A GIF sample of a filter being drawn.](https://i.imgur.com/3u574f8.gif)
 
-This repository contains two apps:
+This repository contains two apps, the facepaint frontend, which uses Vite + React, and a Rails + PostgreSQL backend.
 
-- [facepaint frontend](facepaint-frontend/README.md)
-- [facepaint backend](facepaint-backend/README.md)
+For instructions on running locally, see the individual app READMEs:
 
-For local development, start the backend first then start the frontend.
+- [facepaint frontend README](facepaint-frontend/README.md)
+- [facepaint backend README](facepaint-backend/README.md)
+
+For local development, start the backend first, then start the frontend.
