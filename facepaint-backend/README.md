@@ -12,7 +12,7 @@ This is the Rails API backend for facepaint, an AR drawing app that lets users c
 
 ## Local Setup
 
-From your local facepaint directory:
+After cloning the repo and navigating to the facepaint directory:
 
 ```bash
 cd facepaint-backend
@@ -39,7 +39,7 @@ http://localhost:3000
 
 ## Frontend Connection
 
-The frontend defaults to this backend URL in development:
+The [frontend](facepaint-frontend/README.md) defaults to this backend URL in development:
 
 ```text
 http://localhost:3000

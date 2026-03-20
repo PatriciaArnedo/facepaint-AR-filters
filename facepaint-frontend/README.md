@@ -8,7 +8,7 @@ This is the Vite + React frontend for facepaint, an AR drawing app that lets use
 
 - Node.js
 - npm
-- The backend API running locally on `http://localhost:3000`
+- The [backend API](facepaint-backend/README.md) running locally on `http://localhost:3000`
 
 This frontend uses:
 
@@ -21,10 +21,10 @@ This frontend uses:
 
 ## Local Setup
 
-From the facepaint directory:
+After cloning the repo and navigating to the facepaint directory:
 
 ```bash
-cd /facepaint-frontend
+cd facepaint-frontend
 npm install
 ```
 
