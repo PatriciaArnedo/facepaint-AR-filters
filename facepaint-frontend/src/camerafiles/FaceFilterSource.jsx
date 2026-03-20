@@ -152,7 +152,7 @@ function compile_shader(source, glType, typeString) {
   GL.compileShader(glShader);
   if (!GL.getShaderParameter(glShader, GL.COMPILE_STATUS)) {
     alert(
-      "ERROR IN " + typeString + " SHADER: " + GL.getShaderInfoLog(glShader)
+      "ERROR IN " + typeString + " SHADER: " + GL.getShaderInfoLog(glShader),
     );
     console.log("Buggy shader source: \n", source);
     return null;
@@ -166,12 +166,12 @@ function build_shaderProgram(shaderVertexSource, shaderFragmentSource, id) {
   const glShaderVertex = compile_shader(
     shaderVertexSource,
     GL.VERTEX_SHADER,
-    "VERTEX " + id
+    "VERTEX " + id,
   );
   const glShaderFragment = compile_shader(
     shaderFragmentSource,
     GL.FRAGMENT_SHADER,
-    "FRAGMENT " + id
+    "FRAGMENT " + id,
   );
 
   const glShaderProgram = GL.createProgram();
@@ -214,7 +214,7 @@ function init_scene(spec, canvasPassed) {
   CANVAS2D = canvasPassed;
   CANVAS2D.width = SETTINGS.canvasSizePx;
   CANVAS2D.height = Math.round(
-    (SETTINGS.canvasSizePx * SETTINGS.scale[1]) / SETTINGS.scale[0]
+    (SETTINGS.canvasSizePx * SETTINGS.scale[1]) / SETTINGS.scale[0],
   );
   CTX = CANVAS2D.getContext("2d");
 
@@ -259,7 +259,7 @@ function init_scene(spec, canvasPassed) {
       1,
       0,
     ]),
-    GL.STATIC_DRAW
+    GL.STATIC_DRAW,
   );
 
   // FACES:
@@ -268,7 +268,7 @@ function init_scene(spec, canvasPassed) {
   GL.bufferData(
     GL.ELEMENT_ARRAY_BUFFER,
     new Uint16Array([0, 1, 2, 0, 2, 3]),
-    GL.STATIC_DRAW
+    GL.STATIC_DRAW,
   );
 
   // create the shaders:
@@ -292,7 +292,7 @@ function init_scene(spec, canvasPassed) {
   const shpVideo = build_shaderProgram(
     copyCropVertexShaderSource,
     copyFragmentShaderSource,
-    "VIDEO"
+    "VIDEO",
   );
   SHADERVIDEO = {
     program: shpVideo,
@@ -313,7 +313,7 @@ function init_scene(spec, canvasPassed) {
       vUV = uv;\n\
     }",
     copyFragmentShaderSource,
-    "CANVAS"
+    "CANVAS",
   );
 
   SHADERCANVAS = {
@@ -481,7 +481,7 @@ export const loadImageToCanvas = (imgSrc) => {
       0,
       0,
       CANVAS2D.width,
-      CANVAS2D.height
+      CANVAS2D.height,
     );
     update_canvasTexture();
   };
@@ -629,7 +629,7 @@ export default function main(canvasPassed) {
         GL.uniformMatrix2fv(
           SHADERVIDEO.videoTransformMat2,
           false,
-          VIDEOTRANSFORMMAT2
+          VIDEOTRANSFORMMAT2,
         );
         GL.bindTexture(GL.TEXTURE_2D, VIDEOTEXTURE);
         GL.drawElements(GL.TRIANGLES, 3, GL.UNSIGNED_SHORT, 0);
@@ -639,7 +639,7 @@ export default function main(canvasPassed) {
 
           // move the cube in order to fit the head:
           const tanFOV = Math.tan(
-            (aspect * SETTINGS.cameraFOV * Math.PI) / 360
+            (aspect * SETTINGS.cameraFOV * Math.PI) / 360,
           ); // tan(FOV/2), in radians
           const W = detectState.s; // relative width of the detection window (1-> whole width of the detection window)
           const D = 1 / (2 * W * tanFOV); // distance between the front face of the cube and the camera
@@ -658,13 +658,13 @@ export default function main(canvasPassed) {
             MOVMATRIX,
             x,
             y + SETTINGS.pivotOffsetYZ[0],
-            z + SETTINGS.pivotOffsetYZ[1]
+            z + SETTINGS.pivotOffsetYZ[1],
           );
           set_mat4RotationXYZ(
             MOVMATRIX,
             detectState.rx + SETTINGS.rotationOffsetX,
             detectState.ry,
-            detectState.rz
+            detectState.rz,
           );
 
           // render the canvas above:
@@ -686,7 +686,7 @@ export default function main(canvasPassed) {
               GL.RGBA,
               GL.RGBA,
               GL.UNSIGNED_BYTE,
-              CANVAS2D
+              CANVAS2D,
             );
             CANVASTEXTURENEEDSUPDATE = false;
           }
@@ -697,7 +697,7 @@ export default function main(canvasPassed) {
             GL.FLOAT,
             false,
             20,
-            0
+            0,
           );
           GL.vertexAttribPointer(SHADERCANVAS.uv, 2, GL.FLOAT, false, 20, 12);
           GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, VBO_FACES);
