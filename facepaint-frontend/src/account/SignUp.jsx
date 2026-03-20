@@ -1,32 +1,29 @@
-import React from 'react'
-import { connect } from 'react-redux'
-import { signUp } from '../redux/actions'
-import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext'
-
+import React from "react";
+import { connect } from "react-redux";
+import { signUp } from "../redux/actions";
+import { Button } from "primereact/button";
+import { InputText } from "primereact/inputtext";
 
 class SignUp extends React.Component {
-
   state = {
     username: "",
     name: "",
-    password: ""
-  }
+    password: "",
+  };
 
   changeHandler = (e) => {
-    this.setState({ [e.target.name]: e.target.value })
-  }
+    this.setState({ [e.target.name]: e.target.value });
+  };
 
   submitHandler = (e) => {
-    e.preventDefault()
-    this.props.submitHandler(this.state)
+    e.preventDefault();
+    this.props.submitHandler(this.state);
     this.setState({
       username: "",
       name: "",
-      password: ""
-    })
-
-  }
+      password: "",
+    });
+  };
 
   render() {
     return (
@@ -71,17 +68,20 @@ class SignUp extends React.Component {
           </form>
           <br />
           <div>
-          <Button onClick={this.props.cancelHandler} className="p-button-warning" label="Cancel" />
+            <Button
+              onClick={this.props.cancelHandler}
+              className="p-button-warning"
+              label="Cancel"
+            />
           </div>
         </div>
       </div>
-    )
+    );
   }
-
 }
 
 const mapDispatchToProps = (dispatch) => {
-  return { submitHandler: (userObj) => dispatch(signUp(userObj)) }
-}
+  return { submitHandler: (userObj) => dispatch(signUp(userObj)) };
+};
 
-export default connect(null, mapDispatchToProps)(SignUp)
+export default connect(null, mapDispatchToProps)(SignUp);

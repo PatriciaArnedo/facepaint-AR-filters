@@ -1,13 +1,9 @@
-import React from "react"
-import './App.css';
-import RootContainer from './containers/RootContainer'
-
-
+import React from "react";
+import "./App.css";
+import RootContainer from "./containers/RootContainer";
 
 class App extends React.Component {
-
-
-  render () {
+  render() {
     return (
       <div>
         <RootContainer />
@@ -17,5 +13,3 @@ class App extends React.Component {
 }
 
 export default App;
-
-

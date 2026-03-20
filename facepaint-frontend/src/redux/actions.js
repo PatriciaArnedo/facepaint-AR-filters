@@ -112,7 +112,7 @@ export const getUserFilters = (userId) => {
       .then((r) => r.json())
       .then((arrayOfFilters) => {
         const newArray = arrayOfFilters.filter(
-          (filter) => filter.user.id === userId
+          (filter) => filter.user.id === userId,
         );
         // console.log("got array of length:", newArray.length)
         dispatch({ type: GET_USER_FILTERS, payload: newArray });
@@ -127,7 +127,7 @@ export const getAllFilters = (userId) => {
       .then((r) => r.json())
       .then((arrayOfFilters) => {
         const newArray = shuffleArray(
-          arrayOfFilters.filter((filter) => filter.user.id !== userId)
+          arrayOfFilters.filter((filter) => filter.user.id !== userId),
         );
         // console.log("got array of length:", newArray.length)
         dispatch({ type: GET_ALL_FILTERS, payload: newArray });
@@ -150,7 +150,7 @@ export const getSavedFilters = (userId) => {
       .then((r) => r.json())
       .then((arrayOfFilters) => {
         const newArray = arrayOfFilters.filter(
-          (filter) => filter.user_id === userId
+          (filter) => filter.user_id === userId,
         );
         // console.log("got array of length:", newArray.length)
         dispatch({ type: GET_SAVED_FILTERS, payload: newArray });
