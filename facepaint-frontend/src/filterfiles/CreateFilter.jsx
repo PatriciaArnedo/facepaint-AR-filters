@@ -61,7 +61,7 @@ class CreateFilter extends React.Component {
                 //setstate with the returned atrament library
                 this.setState({ atrament: atrament }, this.setAtrament)
             })
-                .catch(console.log)
+                .catch((err) => console.error("CreateFilter cameraStartup failed", err))
         }
         this.props.getUsers(this.props.userId)
 
@@ -70,7 +70,7 @@ class CreateFilter extends React.Component {
     componentWillUnmount() {
         cameraShutdown()
             .then(console.log("camera shut down"))
-            .catch(console.log)
+            .catch((err) => console.error("CreateFilter cameraShutdown failed", err))
     }
 
 

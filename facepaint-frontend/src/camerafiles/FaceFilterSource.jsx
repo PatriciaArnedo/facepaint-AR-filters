@@ -10,68 +10,72 @@ at the next rendering.
 */
 
 "use strict";
-import * as JEEFACEFILTERAPI from "facefilter/dist/jeelizFaceFilter.module.js"
-// ** import neural network that will be used 
-import neuralNetworkModel from "facefilter/neuralNets/NN_DEFAULT.json"
+import * as JEEFACEFILTERAPI from "facefilter/dist/jeelizFaceFilter.module.js";
+// ** import neural network that will be used
+import neuralNetworkModel from "facefilter/neuralNets/NN_DEFAULT.json";
 // ** import entire atrament library
-import * as Atrament from "atrament"
-
+import Atrament from "atrament";
 
 // SETTINGS
 const SETTINGS = {
   rotationOffsetX: 0, // negative -> look upper. in radians
-  cameraFOV: 40,    // in degrees, 3D camera FOV
+  cameraFOV: 40, // in degrees, 3D camera FOV
   pivotOffsetYZ: [0.2, 0.2], // XYZ of the distance between the center of the cube and the pivot
   detectionThreshold: 0.75, // sensibility, between 0 and 1. Less -> more sensitive
   detectionHysteresis: 0.05,
   // ** scale controls the height and width of the inner canvas
   scale: [1.5, 2], // scale of the 2D canvas along horizontal and vertical 2D axis
   offsetYZ: [-0.1, -0.2], // offset of the 2D canvas along vertical and depth 3D axis
-  // ** canvassizepx is the resolution - the lower it is the larger the brush at lower numbers 
-  canvasSizePx: 1024 // resolution of the 2D canvas in pixels originally 512
+  // ** canvassizepx is the resolution - the lower it is the larger the brush at lower numbers
+  canvasSizePx: 1024, // resolution of the 2D canvas in pixels originally 512
 };
 
 // ** setting atrament to be set to a canvas in init_scene function
-export let atrament = null
+export let atrament = null;
 
-// ** global variables that came with this spaghetti code -_- 
-let prevPoint = null
-let CV = null, CANVAS2D = null, CTX = null, GL = null, CANVASTEXTURE = null, CANVASTEXTURENEEDSUPDATE = false;
-let PROJMATRIX = null, PROJMATRIXNEEDSUPDATE = true;
-let VBO_VERTEX = null, VBO_FACES = null, SHADERCANVAS = null;
-let SHADERVIDEO = null, VIDEOTEXTURE = null, VIDEOTRANSFORMMAT2 = null;
-let MOVMATRIX = create_mat4Identity(), MOVMATRIXINV = create_mat4Identity();
-let ZPLANE = 0, YPLANE = 0;
+// ** global variables that came with this spaghetti code -_-
+let prevPoint = null;
+let CV = null,
+  CANVAS2D = null,
+  CTX = null,
+  GL = null,
+  CANVASTEXTURE = null,
+  CANVASTEXTURENEEDSUPDATE = false;
+let PROJMATRIX = null,
+  PROJMATRIXNEEDSUPDATE = true;
+let VBO_VERTEX = null,
+  VBO_FACES = null,
+  SHADERCANVAS = null;
+let SHADERVIDEO = null,
+  VIDEOTEXTURE = null,
+  VIDEOTRANSFORMMAT2 = null;
+let MOVMATRIX = create_mat4Identity(),
+  MOVMATRIXINV = create_mat4Identity();
+let ZPLANE = 0,
+  YPLANE = 0;
 let ISDETECTED = false;
 
-// ** custom function that is exported to be used by react components. 
+// ** custom function that is exported to be used by react components.
 // ** toggles eventlistenerenabled variable which is used in event listener functions
-let eventListenersEnabled = true
+let eventListenersEnabled = true;
 export const setEventListnerEnabled = (enabled) => {
-  eventListenersEnabled = enabled
-}
-
+  eventListenersEnabled = enabled;
+};
 
 //---------The following is the library's spaghetti code----------//
-
 
 // callback: launched if a face is detected or lost.
 function detect_callback(isDetected) {
   if (isDetected) {
-    console.log('INFO in detect_callback(): DETECTED');
+    console.log("INFO in detect_callback(): DETECTED");
   } else {
-    console.log('INFO in detect_callback(): LOST');
+    console.log("INFO in detect_callback(): LOST");
   }
 }
 
 //BEGIN MATRIX ALGEBRA FUNCTIONS
 function create_mat4Identity() {
-  return [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ];
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 }
 
 // set the position part of a flattened transposed mat4:
@@ -83,9 +87,12 @@ function set_mat4Position(m, x, y, z) {
 
 // set the rotation part of a flattened transposed mat4 - see https://en.wikipedia.org/wiki/Euler_angles
 function set_mat4RotationXYZ(m, rx, ry, rz) {
-  const c1 = Math.cos(rx), s1 = Math.sin(rx),
-    c2 = Math.cos(ry), s2 = Math.sin(ry),
-    c3 = Math.cos(rz), s3 = Math.sin(rz);
+  const c1 = Math.cos(rx),
+    s1 = Math.sin(rx),
+    c2 = Math.cos(ry),
+    s2 = Math.sin(ry),
+    c3 = Math.cos(rz),
+    s3 = Math.sin(rz);
   // first line (not transposed)
   m[0] = c2 * c3;
   m[4] = -c2 * s3;
@@ -128,15 +135,14 @@ function multiply_matVec4(m, v) {
     m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
     m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
     m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14] * v[3],
-    m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3]
+    m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3],
   ];
 }
 
 function get_mat4Pos(m) {
-  return [m[12], m[13], m[14]]
+  return [m[12], m[13], m[14]];
 }
 //END MATRIX ALGEBRA FUNCTIONS
-
 
 //BEGIN WEBGL HELPERS
 // compile a shader:
@@ -145,18 +151,28 @@ function compile_shader(source, glType, typeString) {
   GL.shaderSource(glShader, source);
   GL.compileShader(glShader);
   if (!GL.getShaderParameter(glShader, GL.COMPILE_STATUS)) {
-    alert("ERROR IN " + typeString + " SHADER: " + GL.getShaderInfoLog(glShader));
-    console.log('Buggy shader source: \n', source);
+    alert(
+      "ERROR IN " + typeString + " SHADER: " + GL.getShaderInfoLog(glShader)
+    );
+    console.log("Buggy shader source: \n", source);
     return null;
   }
   return glShader;
-};
+}
 
 // helper function to build the shader program:
 function build_shaderProgram(shaderVertexSource, shaderFragmentSource, id) {
   // compile both shader separately:
-  const glShaderVertex = compile_shader(shaderVertexSource, GL.VERTEX_SHADER, "VERTEX " + id);
-  const glShaderFragment = compile_shader(shaderFragmentSource, GL.FRAGMENT_SHADER, "FRAGMENT " + id);
+  const glShaderVertex = compile_shader(
+    shaderVertexSource,
+    GL.VERTEX_SHADER,
+    "VERTEX " + id
+  );
+  const glShaderFragment = compile_shader(
+    shaderFragmentSource,
+    GL.FRAGMENT_SHADER,
+    "FRAGMENT " + id
+  );
 
   const glShaderProgram = GL.createProgram();
   GL.attachShader(glShaderProgram, glShaderVertex);
@@ -169,25 +185,21 @@ function build_shaderProgram(shaderVertexSource, shaderFragmentSource, id) {
 
 // helper function to create the projection matrix:
 function update_projMatrix() {
-  const tan = Math.tan(0.5 * SETTINGS.cameraFOV * Math.PI / 180),
-    zMax = 100, zMin = 0.1, a = CV.width / CV.height;
+  const tan = Math.tan((0.5 * SETTINGS.cameraFOV * Math.PI) / 180),
+    zMax = 100,
+    zMin = 0.1,
+    a = CV.width / CV.height;
 
   const A = -(zMax + zMin) / (zMax - zMin),
     B = (-2 * zMax * zMin) / (zMax - zMin);
 
-  PROJMATRIX = [
-    1.0 / tan, 0, 0, 0,
-    0, a / tan, 0, 0,
-    0, 0, A, -1,
-    0, 0, B, 0
-  ];
+  PROJMATRIX = [1.0 / tan, 0, 0, 0, 0, a / tan, 0, 0, 0, 0, A, -1, 0, 0, B, 0];
 
   GL.uniformMatrix4fv(SHADERCANVAS.projMatrix, false, PROJMATRIX);
   PROJMATRIXNEEDSUPDATE = false;
 }
 
 //END WEBGL HELPERS
-
 
 // ** this function is called in main, takes canvas created in react as canvaspassed argument
 //build the 3D. called once when Jeeliz Face Filter is OK
@@ -199,11 +211,12 @@ function init_scene(spec, canvasPassed) {
   VIDEOTRANSFORMMAT2 = spec.videoTransformMat2;
 
   // create and size the 2D canvas and its drawing context:
-  CANVAS2D = canvasPassed
+  CANVAS2D = canvasPassed;
   CANVAS2D.width = SETTINGS.canvasSizePx;
-  CANVAS2D.height = Math.round(SETTINGS.canvasSizePx * SETTINGS.scale[1] / SETTINGS.scale[0]);
-  CTX = CANVAS2D.getContext('2d');
-  
+  CANVAS2D.height = Math.round(
+    (SETTINGS.canvasSizePx * SETTINGS.scale[1]) / SETTINGS.scale[0]
+  );
+  CTX = CANVAS2D.getContext("2d");
 
   // create the WebGL texture with the canvas:
   CANVASTEXTURE = GL.createTexture();
@@ -215,29 +228,52 @@ function init_scene(spec, canvasPassed) {
   GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE);
 
   // create the face plane:
-  const sx = SETTINGS.scale[0], sy = SETTINGS.scale[1];  // scale
+  const sx = SETTINGS.scale[0],
+    sy = SETTINGS.scale[1]; // scale
   YPLANE = SETTINGS.offsetYZ[0] + SETTINGS.pivotOffsetYZ[0]; // offset
   ZPLANE = SETTINGS.offsetYZ[1] + SETTINGS.pivotOffsetYZ[1];
   VBO_VERTEX = GL.createBuffer();
   GL.bindBuffer(GL.ARRAY_BUFFER, VBO_VERTEX);
-  GL.bufferData(GL.ARRAY_BUFFER,
-    new Float32Array([ //format of each vertex: x,y,z,  u,v
-      -sx, -sy + YPLANE, ZPLANE, 1, 1,
-      sx, -sy + YPLANE, ZPLANE, 0, 1,
-      sx, sy + YPLANE, ZPLANE, 0, 0,
-      -sx, sy + YPLANE, ZPLANE, 1, 0
-    ]), GL.STATIC_DRAW);
+  GL.bufferData(
+    GL.ARRAY_BUFFER,
+    new Float32Array([
+      //format of each vertex: x,y,z,  u,v
+      -sx,
+      -sy + YPLANE,
+      ZPLANE,
+      1,
+      1,
+      sx,
+      -sy + YPLANE,
+      ZPLANE,
+      0,
+      1,
+      sx,
+      sy + YPLANE,
+      ZPLANE,
+      0,
+      0,
+      -sx,
+      sy + YPLANE,
+      ZPLANE,
+      1,
+      0,
+    ]),
+    GL.STATIC_DRAW
+  );
 
   // FACES:
   VBO_FACES = GL.createBuffer();
   GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, VBO_FACES);
-  GL.bufferData(GL.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array([
-      0, 1, 2, 0, 2, 3
-    ]), GL.STATIC_DRAW);
+  GL.bufferData(
+    GL.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([0, 1, 2, 0, 2, 3]),
+    GL.STATIC_DRAW
+  );
 
   // create the shaders:
-  const copyCropVertexShaderSource = "attribute vec2 position;\n\
+  const copyCropVertexShaderSource =
+    "attribute vec2 position;\n\
      uniform mat2 videoTransformMat2;\n\
      varying vec2 vUV;\n\
      void main(void){\n\
@@ -245,23 +281,29 @@ function init_scene(spec, canvasPassed) {
       vUV = vec2(0.5,0.5) + videoTransformMat2 * position;\n\
      }";
 
-  const copyFragmentShaderSource = "precision lowp float;\n\
+  const copyFragmentShaderSource =
+    "precision lowp float;\n\
      uniform sampler2D samplerImage;\n\
      varying vec2 vUV;\n\
      \n\
      void main(void){\n\
       gl_FragColor = texture2D(samplerImage, vUV);\n\
      }";
-  const shpVideo = build_shaderProgram(copyCropVertexShaderSource, copyFragmentShaderSource, 'VIDEO');
+  const shpVideo = build_shaderProgram(
+    copyCropVertexShaderSource,
+    copyFragmentShaderSource,
+    "VIDEO"
+  );
   SHADERVIDEO = {
     program: shpVideo,
-    videoTransformMat2: GL.getUniformLocation(shpVideo, 'videoTransformMat2')
+    videoTransformMat2: GL.getUniformLocation(shpVideo, "videoTransformMat2"),
   };
-  let uSampler = GL.getUniformLocation(shpVideo, 'samplerImage');
+  let uSampler = GL.getUniformLocation(shpVideo, "samplerImage");
   GL.useProgram(shpVideo);
   GL.uniform1i(uSampler, 0);
 
-  const shpCanvas = build_shaderProgram( //basic 3D projection shader
+  const shpCanvas = build_shaderProgram(
+    //basic 3D projection shader
     "attribute vec3 position;\n\
     attribute vec2 uv;\n\
     uniform mat4 projMatrix, movMatrix;\n\
@@ -270,16 +312,18 @@ function init_scene(spec, canvasPassed) {
       gl_Position = projMatrix*movMatrix*vec4(position, 1.);\n\
       vUV = uv;\n\
     }",
-    copyFragmentShaderSource, 'CANVAS');
+    copyFragmentShaderSource,
+    "CANVAS"
+  );
 
   SHADERCANVAS = {
     program: shpCanvas,
-    projMatrix: GL.getUniformLocation(shpCanvas, 'projMatrix'),
-    movMatrix: GL.getUniformLocation(shpCanvas, 'movMatrix'),
-    position: GL.getAttribLocation(shpCanvas, 'position'),
-    uv: GL.getAttribLocation(shpCanvas, 'uv')
+    projMatrix: GL.getUniformLocation(shpCanvas, "projMatrix"),
+    movMatrix: GL.getUniformLocation(shpCanvas, "movMatrix"),
+    position: GL.getAttribLocation(shpCanvas, "position"),
+    uv: GL.getAttribLocation(shpCanvas, "uv"),
   };
-  uSampler = GL.getUniformLocation(shpCanvas, 'samplerImage');
+  uSampler = GL.getUniformLocation(shpCanvas, "samplerImage");
   GL.useProgram(shpCanvas);
   GL.uniform1i(uSampler, 0);
   GL.disableVertexAttribArray(shpCanvas, SHADERCANVAS.position);
@@ -287,39 +331,41 @@ function init_scene(spec, canvasPassed) {
 
   //------------------!!ATRAMENT GETS DEFINED!!---------------------//
   // ** CANVAS2D gets turned into atrament canvas
+  console.log("IS THERE A CANVAS?", CANVAS2D);
   atrament = new Atrament(CANVAS2D);
   // ** atrament gets returned here and later returned by main to be used by react component
-  return atrament
+  return atrament;
 } //end init_scene()
-
 
 //-----------------Event Listeners--------------------//
 
 //BEGIN MOUSE/TOUCH EVENTS FUNCTIONS
 const MOUSESTATES = {
   idle: 0,
-  drag: 1
+  drag: 1,
 };
-let MOUSESTATE = MOUSESTATES.idle, OLDXY;
+let MOUSESTATE = MOUSESTATES.idle,
+  OLDXY;
 
 function init_eventListeners() {
   // add touch and mouse event listeners:
-  CV.addEventListener('mousedown', onMouseDown, false);
-  CV.addEventListener('touchdown', onMouseDown, false);
-  CV.addEventListener('touchstart', onMouseDown, false); // for IOS
+  CV.addEventListener("mousedown", onMouseDown, false);
+  CV.addEventListener("touchdown", onMouseDown, false);
+  CV.addEventListener("touchstart", onMouseDown, false); // for IOS
 
-  CV.addEventListener('mouseup', onMouseUp, false);
-  CV.addEventListener('touchup', onMouseUp, false);
+  CV.addEventListener("mouseup", onMouseUp, false);
+  CV.addEventListener("touchup", onMouseUp, false);
 
-  CV.addEventListener('mousemove', onMouseMove, false);
-  CV.addEventListener('touchmove', onMouseMove, false);
+  CV.addEventListener("mousemove", onMouseMove, false);
+  CV.addEventListener("touchmove", onMouseMove, false);
 }
 
-function get_eventLoc(event) { // return the position of the picked point in pixels in the canvas2D
+function get_eventLoc(event) {
+  // return the position of the picked point in pixels in the canvas2D
   // get cursor position in pixel in the HTML page ref:
-  const isTouch = (event.touches && event.touches.length) ? true : false;
-  const xPx = (isTouch) ? event.touches[0].clientX : event.clientX;
-  const yPx = (isTouch) ? event.touches[0].clientY : event.clientY;
+  const isTouch = event.touches && event.touches.length ? true : false;
+  const xPx = isTouch ? event.touches[0].clientX : event.clientX;
+  const yPx = isTouch ? event.touches[0].clientY : event.clientY;
 
   // convert it to viewport coordinates (between -1 and 1, Y up):
   const canvasRect = CV.getBoundingClientRect();
@@ -339,17 +385,17 @@ function get_eventLoc(event) { // return the position of the picked point in pix
   const origin = get_mat4Pos(MOVMATRIXINV);
 
   // compute the intersection between the ray (origin, vec) and the plane defined by Z=ZPLANE:
-  const k = (ZPLANE - origin[2]) / vec[2];// k so that origin+k*vec belongs to the plane
+  const k = (ZPLANE - origin[2]) / vec[2]; // k so that origin+k*vec belongs to the plane
   const xi = origin[0] + k * vec[0], // x of the intersection point
-    yi = origin[1] + k * vec[1]  // y of the intersection point
+    yi = origin[1] + k * vec[1]; // y of the intersection point
 
   // normalize xi and yi between [-1 and 1] according to the size of the canvas in the space:
   const xin = xi / SETTINGS.scale[0];
   const yin = (yi - YPLANE) / SETTINGS.scale[1];
 
   // convert xin and yin to canvas pixel coordinates and re-invert Y axis:
-  const xCv = CANVAS2D.width * (-xin + 1) / 2;
-  const yCv = CANVAS2D.height * (-yin + 1) / 2;
+  const xCv = (CANVAS2D.width * (-xin + 1)) / 2;
+  const yCv = (CANVAS2D.height * (-yin + 1)) / 2;
 
   return [xCv, yCv];
 } //end get_eventLoc()
@@ -357,7 +403,7 @@ function get_eventLoc(event) { // return the position of the picked point in pix
 function onMouseDown(event) {
   // ** checks variable to enable/disable event listeners
   if (!eventListenersEnabled) {
-    return
+    return;
   }
   if (MOUSESTATE !== MOUSESTATES.idle || !ISDETECTED) return;
   MOUSESTATE = MOUSESTATES.drag;
@@ -365,14 +411,14 @@ function onMouseDown(event) {
   OLDXY = get_eventLoc(event);
   // ** use mousedown event to draw on atrament canvas
   atrament.beginStroke(OLDXY[0], OLDXY[1]);
-  prevPoint = { x: OLDXY[0], y: OLDXY[1] }
+  prevPoint = { x: OLDXY[0], y: OLDXY[1] };
   // CTX.beginPath();
   // CTX.moveTo(OLDXY[0], OLDXY[1]);
 }
 function onMouseMove(event) {
   // ** checks variable to enable/disable event listeners
   if (!eventListenersEnabled) {
-    return
+    return;
   }
   if (MOUSESTATE !== MOUSESTATES.drag) return;
   if (!ISDETECTED) {
@@ -394,7 +440,7 @@ function onMouseMove(event) {
 function onMouseUp(event) {
   // ** checks variable to enable/disable event listeners
   if (!eventListenersEnabled) {
-    return
+    return;
   }
   if (MOUSESTATE !== MOUSESTATES.drag) return;
   MOUSESTATE = MOUSESTATES.idle;
@@ -403,7 +449,6 @@ function onMouseUp(event) {
 }
 //END MOUSE/TOUCH EVENTS FUNCTIONS
 
-
 //----------Exported and custom functions-----------//
 
 export function update_canvasTexture() {
@@ -411,117 +456,168 @@ export function update_canvasTexture() {
   CANVASTEXTURENEEDSUPDATE = true;
 }
 
-// ** custom function that is exported to be used by react components 
+// ** custom function that is exported to be used by react components
 // export function changeOpacity(opacity) {
 //   CTX.globalAlpha = opacity
 // }
 
-
-// ** custom function that is exported to be used by react components. 
+// ** custom function that is exported to be used by react components.
 //** uses code from facefilter library to map filter image to inner canvas
 export const loadImageToCanvas = (imgSrc) => {
   if (!CTX) {
-    console.warn('refusing to load image to canvas as CTX has not been set')
-    return
+    console.warn("refusing to load image to canvas as CTX has not been set");
+    return;
   }
-  atrament.clear()
-  const img = new Image()
+  atrament.clear();
+  const img = new Image();
   img.src = imgSrc;
-  img.onload = function(){
-    CTX.drawImage(img, 0, 0, img.width, img.height, 0, 0, CANVAS2D.width, CANVAS2D.height);
+  img.onload = function () {
+    CTX.drawImage(
+      img,
+      0,
+      0,
+      img.width,
+      img.height,
+      0,
+      0,
+      CANVAS2D.width,
+      CANVAS2D.height
+    );
     update_canvasTexture();
-  }
-}
+  };
+};
 
 // ** this function stops the facefilter from running, exported to be used in react
 export async function cameraShutdown() {
-  console.log("before camera shut down in source")
+  console.log("before camera shut down in source");
   if (!mainCalled) {
-    return
+    console.log("cameraShutdown skipped: main was not running");
+    return;
   }
-  await JEEFACEFILTERAPI.destroy()
-  mainCalled = false
-  console.log("camera shut down in source")
-  
+  await JEEFACEFILTERAPI.destroy();
+  mainCalled = false;
+  console.log("camera shut down in source");
 }
 
-// ** this exported function starts up the facefilter in react 
+// ** this exported function starts up the facefilter in react
 export async function cameraStartup(canvasPassed) {
+  console.log("cameraStartup called", {
+    mainCalled,
+    hasNavigator: typeof navigator !== "undefined",
+    hasMediaDevices:
+      typeof navigator !== "undefined" && !!navigator.mediaDevices,
+    hasGetUserMedia:
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia,
+    canvasElementInDom: !!document.getElementById("jeeFaceFilterCanvas"),
+    passedCanvasTagName: canvasPassed?.tagName,
+  });
   // ** these globals needed to be reset in order to restart the face filter
-  prevPoint = null
-  atrament = null
-  CV = null
-  CANVAS2D = null
-  CTX = null
-  GL = null
-  CANVASTEXTURE = null
+  prevPoint = null;
+  atrament = null;
+  CV = null;
+  CANVAS2D = null;
+  CTX = null;
+  GL = null;
+  CANVASTEXTURE = null;
   CANVASTEXTURENEEDSUPDATE = false;
-  PROJMATRIX = null
+  PROJMATRIX = null;
   PROJMATRIXNEEDSUPDATE = true;
-  VBO_VERTEX = null
-  VBO_FACES = null
+  VBO_VERTEX = null;
+  VBO_FACES = null;
   SHADERCANVAS = null;
-  SHADERVIDEO = null
-  VIDEOTEXTURE = null
+  SHADERVIDEO = null;
+  VIDEOTEXTURE = null;
   VIDEOTRANSFORMMAT2 = null;
-  MOVMATRIX = create_mat4Identity()
+  MOVMATRIX = create_mat4Identity();
   MOVMATRIXINV = create_mat4Identity();
-  ZPLANE = 0
+  ZPLANE = 0;
   YPLANE = 0;
   ISDETECTED = false;
 
   // ** if main has not been called, it calls main
   if (!mainCalled) {
-    return main(canvasPassed)
+    return main(canvasPassed);
   }
   // ** else it stops main and starts up main again, otherwise the facefilter will not start on re-renders
   return JEEFACEFILTERAPI.destroy().then(() => {
-    mainCalled = false
-    return main(canvasPassed)
-  })
+    mainCalled = false;
+    return main(canvasPassed);
+  });
 }
 
-let mainCalled = false
+let mainCalled = false;
 // ** main function that runs the face filter
 export default function main(canvasPassed) {
   // ** reset CANVAS2D to act on the passed canvas, was running into bugs on rerender
   if (CANVAS2D) {
-    canvasPassed = CANVAS2D
+    canvasPassed = CANVAS2D;
   }
 
   // ** returns a promise to handle async functions
   return new Promise((resolve, reject) => {
-    if(mainCalled){
-      console.warn("Main Called More Than Once! BEWARE!")
-      return resolve(atrament)
+    if (mainCalled) {
+      console.warn("Main Called More Than Once! BEWARE!");
+      return resolve(atrament);
     }
-    mainCalled = true
-    
+    mainCalled = true;
+    console.log("JEEFACEFILTERAPI.init starting", {
+      canvasId: "jeeFaceFilterCanvas",
+      canvasFound: !!document.getElementById("jeeFaceFilterCanvas"),
+      canvasWidth: document.getElementById("jeeFaceFilterCanvas")?.width,
+      canvasHeight: document.getElementById("jeeFaceFilterCanvas")?.height,
+      innerCanvasWidth: canvasPassed?.width,
+      innerCanvasHeight: canvasPassed?.height,
+    });
+
     JEEFACEFILTERAPI.init({
       //takes the canvas created in the facefiltercanvas react component
-      canvasId: 'jeeFaceFilterCanvas',
+      canvasId: "jeeFaceFilterCanvas",
       NNC: neuralNetworkModel,
       maxFacesDetected: 1,
       callbackReady: function (errCode, spec) {
         if (errCode) {
-          reject(errCode)
-          console.log('AN ERROR HAPPENS. SORRY BRO :( . ERR =', errCode);
+          mainCalled = false;
+          console.error("JEEFACEFILTERAPI callbackReady error", {
+            errCode,
+            canvasFound: !!document.getElementById("jeeFaceFilterCanvas"),
+            navigatorUserAgent:
+              typeof navigator !== "undefined" ? navigator.userAgent : null,
+          });
+          reject(errCode);
+          console.log("AN ERROR HAPPENS. SORRY BRO :( . ERR =", errCode);
           return;
         }
-        console.log('INFO: JEEFACEFILTERAPI IS READY');
+        console.log("INFO: JEEFACEFILTERAPI IS READY", {
+          hasSpec: !!spec,
+          hasGL: !!spec?.GL,
+          hasCanvasElement: !!spec?.canvasElement,
+          hasVideoTexture: !!spec?.videoTexture,
+          hasVideoTransform: !!spec?.videoTransformMat2,
+          videoWidth: spec?.videoElement?.videoWidth,
+          videoHeight: spec?.videoElement?.videoHeight,
+        });
         // ** init_scene returns atrament
         const atrament = init_scene(spec, canvasPassed);
-        init_eventListeners()
-        return resolve(atrament)
+        init_eventListeners();
+        return resolve(atrament);
       }, //end callbackReady()
 
       // called at each render iteration (drawing loop):
       callbackTrack: function (detectState) {
-        if (ISDETECTED && detectState.detected < SETTINGS.detectionThreshold - SETTINGS.detectionHysteresis) {
+        if (
+          ISDETECTED &&
+          detectState.detected <
+            SETTINGS.detectionThreshold - SETTINGS.detectionHysteresis
+        ) {
           // DETECTION LOST
           detect_callback(false);
           ISDETECTED = false;
-        } else if (!ISDETECTED && detectState.detected > SETTINGS.detectionThreshold + SETTINGS.detectionHysteresis) {
+        } else if (
+          !ISDETECTED &&
+          detectState.detected >
+            SETTINGS.detectionThreshold + SETTINGS.detectionHysteresis
+        ) {
           // FACE DETECTED
           detect_callback(true);
           ISDETECTED = true;
@@ -530,7 +626,11 @@ export default function main(canvasPassed) {
         // render the video screen:
         GL.viewport(0, 0, CV.width, CV.height);
         GL.useProgram(SHADERVIDEO.program);
-        GL.uniformMatrix2fv(SHADERVIDEO.videoTransformMat2, false, VIDEOTRANSFORMMAT2);
+        GL.uniformMatrix2fv(
+          SHADERVIDEO.videoTransformMat2,
+          false,
+          VIDEOTRANSFORMMAT2
+        );
         GL.bindTexture(GL.TEXTURE_2D, VIDEOTEXTURE);
         GL.drawElements(GL.TRIANGLES, 3, GL.UNSIGNED_SHORT, 0);
 
@@ -538,8 +638,10 @@ export default function main(canvasPassed) {
           const aspect = CV.width / CV.height;
 
           // move the cube in order to fit the head:
-          const tanFOV = Math.tan(aspect * SETTINGS.cameraFOV * Math.PI / 360); // tan(FOV/2), in radians
-          const W = detectState.s;  // relative width of the detection window (1-> whole width of the detection window)
+          const tanFOV = Math.tan(
+            (aspect * SETTINGS.cameraFOV * Math.PI) / 360
+          ); // tan(FOV/2), in radians
+          const W = detectState.s; // relative width of the detection window (1-> whole width of the detection window)
           const D = 1 / (2 * W * tanFOV); // distance between the front face of the cube and the camera
 
           // coords in 2D of the center of the detection window in the viewport:
@@ -547,13 +649,23 @@ export default function main(canvasPassed) {
           const yv = detectState.y;
 
           // coords in 3D of the center of the cube (in the view coordinates system):
-          const z = -D - 0.5;   // minus because view coordinate system Z goes backward. -0.5 because z is the coord of the center of the cube (not the front face)
+          const z = -D - 0.5; // minus because view coordinate system Z goes backward. -0.5 because z is the coord of the center of the cube (not the front face)
           const x = xv * D * tanFOV;
-          const y = yv * D * tanFOV / aspect;
+          const y = (yv * D * tanFOV) / aspect;
 
           // move and rotate the cube:
-          set_mat4Position(MOVMATRIX, x, y + SETTINGS.pivotOffsetYZ[0], z + SETTINGS.pivotOffsetYZ[1]);
-          set_mat4RotationXYZ(MOVMATRIX, detectState.rx + SETTINGS.rotationOffsetX, detectState.ry, detectState.rz);
+          set_mat4Position(
+            MOVMATRIX,
+            x,
+            y + SETTINGS.pivotOffsetYZ[0],
+            z + SETTINGS.pivotOffsetYZ[1]
+          );
+          set_mat4RotationXYZ(
+            MOVMATRIX,
+            detectState.rx + SETTINGS.rotationOffsetX,
+            detectState.ry,
+            detectState.rz
+          );
 
           // render the canvas above:
           GL.clear(GL.DEPTH_BUFFER_BIT);
@@ -568,11 +680,25 @@ export default function main(canvasPassed) {
           }
           GL.bindTexture(GL.TEXTURE_2D, CANVASTEXTURE);
           if (CANVASTEXTURENEEDSUPDATE) {
-            GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, CANVAS2D);
+            GL.texImage2D(
+              GL.TEXTURE_2D,
+              0,
+              GL.RGBA,
+              GL.RGBA,
+              GL.UNSIGNED_BYTE,
+              CANVAS2D
+            );
             CANVASTEXTURENEEDSUPDATE = false;
           }
           GL.bindBuffer(GL.ARRAY_BUFFER, VBO_VERTEX);
-          GL.vertexAttribPointer(SHADERCANVAS.position, 3, GL.FLOAT, false, 20, 0);
+          GL.vertexAttribPointer(
+            SHADERCANVAS.position,
+            3,
+            GL.FLOAT,
+            false,
+            20,
+            0
+          );
           GL.vertexAttribPointer(SHADERCANVAS.uv, 2, GL.FLOAT, false, 20, 12);
           GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, VBO_FACES);
           GL.drawElements(GL.TRIANGLES, 6, GL.UNSIGNED_SHORT, 0);
@@ -580,8 +706,7 @@ export default function main(canvasPassed) {
           GL.disableVertexAttribArray(SHADERCANVAS.position);
           GL.disable(GL.BLEND);
         } //end if face detected
-      } //end callbackTrack()
+      }, //end callbackTrack()
     }); //end JEEFACEFILTERAPI.init call
-  })
-  
+  });
 }
