@@ -14,7 +14,7 @@ import * as JEEFACEFILTERAPI from "facefilter/dist/jeelizFaceFilter.module.js";
 // ** import neural network that will be used
 import neuralNetworkModel from "facefilter/neuralNets/NN_DEFAULT.json";
 // ** import entire atrament library
-import * as Atrament from "atrament";
+import Atrament from "atrament";
 
 // SETTINGS
 const SETTINGS = {
