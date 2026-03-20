@@ -22,7 +22,7 @@ class FilterTryOn extends React.Component {
             cameraStartup(this.state.canvas).then(() => {
                 console.log("camera is ready")
             })
-            .catch(console.log)
+            .catch((err) => console.error("FilterTryOn cameraStartup failed", err))
         }
         this.props.getUsers(this.props.userId)
     }
@@ -35,7 +35,7 @@ class FilterTryOn extends React.Component {
     componentCleanup = () => {
         cameraShutdown()
         .then(console.log("camera shut down"))
-        .catch(console.log)
+        .catch((err) => console.error("FilterTryOn cameraShutdown failed", err))
     }
 
     render() {

@@ -491,6 +491,7 @@ export const loadImageToCanvas = (imgSrc) => {
 export async function cameraShutdown() {
   console.log("before camera shut down in source");
   if (!mainCalled) {
+    console.log("cameraShutdown skipped: main was not running");
     return;
   }
   await JEEFACEFILTERAPI.destroy();
@@ -500,6 +501,17 @@ export async function cameraShutdown() {
 
 // ** this exported function starts up the facefilter in react
 export async function cameraStartup(canvasPassed) {
+  console.log("cameraStartup called", {
+    mainCalled,
+    hasNavigator: typeof navigator !== "undefined",
+    hasMediaDevices:
+      typeof navigator !== "undefined" && !!navigator.mediaDevices,
+    hasGetUserMedia:
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia,
+    canvasElementInDom: !!document.getElementById("jeeFaceFilterCanvas"),
+    passedCanvasTagName: canvasPassed?.tagName,
+  });
   // ** these globals needed to be reset in order to restart the face filter
   prevPoint = null;
   atrament = null;
@@ -549,6 +561,14 @@ export default function main(canvasPassed) {
       return resolve(atrament);
     }
     mainCalled = true;
+    console.log("JEEFACEFILTERAPI.init starting", {
+      canvasId: "jeeFaceFilterCanvas",
+      canvasFound: !!document.getElementById("jeeFaceFilterCanvas"),
+      canvasWidth: document.getElementById("jeeFaceFilterCanvas")?.width,
+      canvasHeight: document.getElementById("jeeFaceFilterCanvas")?.height,
+      innerCanvasWidth: canvasPassed?.width,
+      innerCanvasHeight: canvasPassed?.height,
+    });
 
     JEEFACEFILTERAPI.init({
       //takes the canvas created in the facefiltercanvas react component
@@ -557,11 +577,26 @@ export default function main(canvasPassed) {
       maxFacesDetected: 1,
       callbackReady: function (errCode, spec) {
         if (errCode) {
+          mainCalled = false;
+          console.error("JEEFACEFILTERAPI callbackReady error", {
+            errCode,
+            canvasFound: !!document.getElementById("jeeFaceFilterCanvas"),
+            navigatorUserAgent:
+              typeof navigator !== "undefined" ? navigator.userAgent : null,
+          });
           reject(errCode);
           console.log("AN ERROR HAPPENS. SORRY BRO :( . ERR =", errCode);
           return;
         }
-        console.log("INFO: JEEFACEFILTERAPI IS READY");
+        console.log("INFO: JEEFACEFILTERAPI IS READY", {
+          hasSpec: !!spec,
+          hasGL: !!spec?.GL,
+          hasCanvasElement: !!spec?.canvasElement,
+          hasVideoTexture: !!spec?.videoTexture,
+          hasVideoTransform: !!spec?.videoTransformMat2,
+          videoWidth: spec?.videoElement?.videoWidth,
+          videoHeight: spec?.videoElement?.videoHeight,
+        });
         // ** init_scene returns atrament
         const atrament = init_scene(spec, canvasPassed);
         init_eventListeners();
