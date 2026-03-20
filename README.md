@@ -6,7 +6,7 @@ facepaint is an AR drawing app where users can sign up, create hand-drawn face f
 
 This repository contains two apps:
 
-- [facepaint fron end](facepaint-frontend/README.md)
+- [facepaint frontend](facepaint-frontend/README.md)
 - [facepaint backend](facepaint-backend/README.md)
 
 For local development, start the backend first then start the frontend.
