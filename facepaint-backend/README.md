@@ -1,27 +1,67 @@
-<h1>facepaint</h1>
+# facepaint backend
 
-<h2>Overview</h2>
-Welcome to facepaint! facepaint is an AR drawing app that allows users to create hand drawn face filters. You can visit
-the live website <a href="https://facepaint.patriciaarnedo.com">here</a>.
+## Overview
 
-Start by logging in or signing up for an account. Once you are logged in, you can try on filters created by other users, create your own filters, favorite filters, or customize your profile.
+This is the Rails API backend for facepaint, an AR drawing app that lets users create hand-drawn face filters.
 
-Here is a sample of the filter drawing interface:
+## Prerequisites
 
-<img src=https://i.imgur.com/3u574f8.gif/>
+- Ruby `3.2.1`
+- Bundler
+- PostgreSQL running locally
 
-<h3>User Stories</h3>
+## Local Setup
 
-1. A user can Sign up for an account and log in/log out
-2. A user can create a face filter
-3. A user can delete a face filter
-4. A user can try on face filters
-5. A user can save their favorite face filters
-6. A user can upload a profile picture
-7. A user can visit other user's accounts and browse their filters
+From your local facepaint directory:
 
-This project was created using the following libraries:
-<br>
-<a a href="https://github.com/jeeliz/jeelizFaceFilter">Jeeliz</a>
-<br>
-<a a href="https://github.com/jakubfiala/atrament.js?utm_source=designernews">Atrament.js</a>
+```bash
+cd facepaint-backend
+bundle install
+```
+
+Prepare the database:
+
+```bash
+bin/rails db:prepare
+```
+
+Start the server:
+
+```bash
+bin/rails server
+```
+
+The API runs at:
+
+```text
+http://localhost:3000
+```
+
+## Frontend Connection
+
+The frontend defaults to this backend URL in development:
+
+```text
+http://localhost:3000
+```
+
+In the frontend code, the API base URL comes from `import.meta.env.REACT_APP_BASE_URL` and falls back to `http://localhost:3000` if that variable is not set.
+
+If you are running the frontend locally on Vite, start the backend first, then start the frontend. The frontend should be able to call this API without extra setup as long as the backend is running on port `3000`.
+
+This backend includes routes for:
+
+- users
+- login
+- filters
+- save_filters
+
+## User Stories
+
+1. A user can sign up for an account and log in/log out.
+2. A user can create a face filter.
+3. A user can delete a face filter.
+4. A user can try on face filters.
+5. A user can save their favorite face filters.
+6. A user can upload a profile picture.
+7. A user can visit other users' accounts and browse their filters.
